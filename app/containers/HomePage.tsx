@@ -7,6 +7,7 @@ const { dialog, getCurrentWindow } = require('electron').remote;
 import { IMediaRecorder, MediaRecorder, register } from 'extendable-media-recorder';
 import { connect } from 'extendable-media-recorder-wav-encoder';
 import { BrowserWindow, SaveDialogOptions } from 'electron';
+import { getMicrophoneStream } from '../audio/AudioHelpers';
 
 interface IState {
   mediaRecorder: IMediaRecorder | undefined;
@@ -26,7 +27,6 @@ export default class HomePage extends Component<{}, IState> {
       });
     } else {
       this.startRecording();
-      
     }
   }
 
@@ -47,8 +47,7 @@ export default class HomePage extends Component<{}, IState> {
 
     return (
       <div>
-        Nice!
-          <div onClick={this.toggleRecording}>
+          <div onClick={this.toggleRecording} style={{cursor: 'pointer'}}>
             {isRecording ? 'Stop Recording' : 'Start Recording'}
           </div>
       </div>
@@ -60,17 +59,9 @@ async function setupMediaRecorder(): Promise<IMediaRecorder> {
   const port = await connect();
   await register(port);
 
-  const audioContext = new AudioContext();
-  const bufferLength = 100;
-  const frequency = audioContext.sampleRate / bufferLength;
+  const stream = await getMicrophoneStream();
 
-  const mediaStreamAudioDestinationNode = new MediaStreamAudioDestinationNode(audioContext);
-  const oscillatorNode = new OscillatorNode(audioContext, { frequency });
-
-  oscillatorNode.connect(mediaStreamAudioDestinationNode);
-  oscillatorNode.start();
-
-  const mediaRecorder = new MediaRecorder(mediaStreamAudioDestinationNode.stream, {
+  const mediaRecorder = new MediaRecorder(stream, {
       mimeType: 'audio/wav',
   });
 
